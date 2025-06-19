@@ -11,6 +11,7 @@ interface ProposalFile {
   name: string;
   type: string;
   date: string;
+  data: string; // Base64-encoded file data
 }
 
 const ProposalPage: React.FC = () => {
@@ -42,18 +43,32 @@ const ProposalPage: React.FC = () => {
       return;
     }
 
-    const newFile: ProposalFile = {
-      id: Date.now(),
-      name: file.name,
-      type: docType,
-      date: new Date().toLocaleDateString()
-    };
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = reader.result as string;
+      const newFile: ProposalFile = {
+        id: Date.now(),
+        name: file.name,
+        type: docType,
+        date: new Date().toLocaleDateString(),
+        data: base64Data // Store Base64 data
+      };
 
-    const updatedFiles = [...files, newFile];
-    setFiles(updatedFiles);
-    localStorage.setItem('proposalFiles', JSON.stringify(updatedFiles));
-    setFile(null);
-    setDocType('');
+      const updatedFiles = [...files, newFile];
+      try {
+        setFiles(updatedFiles);
+        localStorage.setItem('proposalFiles', JSON.stringify(updatedFiles));
+      } catch (e) {
+        alert('Error saving to local storage: Storage may be full');
+        console.error(e);
+      }
+      setFile(null);
+      setDocType('');
+    };
+    reader.onerror = () => {
+      alert('Error reading file');
+    };
+    reader.readAsDataURL(file); // Convert file to Base64
   };
 
   const handleSelect = (id: number) => {
@@ -69,8 +84,19 @@ const ProposalPage: React.FC = () => {
       alert('Please select at least one file');
       return;
     }
-    alert(`Generating proposal with selected files: ${selectedFiles.length}`);
+    const selectedFileDetails = files
+      .filter(file => selectedFiles.includes(file.id))
+      .map(file => `${file.name} (Data: ${file.data.substring(0, 30)}...)`)
+      .join(', ');
+    alert(`Generating proposal with selected files: ${selectedFileDetails}`);
     // Placeholder for proposal generation logic
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem('proposalFiles');
+    setFiles([]);
+    setSelectedFiles([]);
+    alert('All documents have been cleared from local storage');
   };
 
   const handleLogout = () => {
@@ -163,14 +189,23 @@ const ProposalPage: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{ mt: 3 }}
-          onClick={handleGenerateProposal}
-        >
-          Generate Proposal
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleGenerateProposal}
+          >
+            Generate Proposal
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            fullWidth
+            onClick={handleReset}
+          >
+            Reset
+          </Button>
+        </Box>
       </Container>
     </Box>
   );
