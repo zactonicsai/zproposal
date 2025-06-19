@@ -47,6 +47,7 @@ const ProposalPage: React.FC = () => {
       name: file.name,
       type: docType,
       date: new Date().toLocaleDateString()
+      content: file.
     };
 
     const updatedFiles = [...files, newFile];
@@ -69,7 +70,11 @@ const ProposalPage: React.FC = () => {
       alert('Please select at least one file');
       return;
     }
-    alert(`Generating proposal with selected files: ${selectedFiles.length}`);
+    const selectedFileNames = files
+      .filter(file => selectedFiles.includes(file.id))
+      .map(file => file.name)
+      .join(', ');
+    alert(`Generating proposal with selected files: ${selectedFileNames}`);
     // Placeholder for proposal generation logic
   };
 
